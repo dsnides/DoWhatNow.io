@@ -1,36 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>File Upload Test</title>
+  <meta charset="UTF-8">
+  <title>Text‑File Upload &amp; Echo</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    #output { 
+      margin-top: 1rem; 
+      padding: 1rem; 
+      border: 1px solid #ccc; 
+      white-space: pre-wrap; 
+      background: #f9f9f9;
+    }
+    #submit-btn:disabled { opacity: 0.6; }
+  </style>
 </head>
 <body>
-    <h1>Upload a Text File</h1>
-    <form action="https://hello-world-app-242937714343.us-central1.run.app/process" method="POST" enctype="multipart/form-data">
-        <div>
-            <label for="file">Select a text file:</label>
-            <input type="file" name="file" id="file" accept=".txt" required>
-        </div>
-        <button type="submit">Upload and Process</button>
-    </form>
-    <div id="output"></div>
-    <script>
-        const form = document.querySelector('form');
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault(); // Prevent the default form submission
-            const formData = new FormData(form);
-            const response = await fetch('https://hello-world-app-242937714343.us-central1.run.app/process', {  // Use /process
-                method: 'POST',
-                body: formData,
-            });
+  <h1>Upload a Text File → Echo Back</h1>
 
-            if (response.ok) {
-                const text = await response.text();
-                document.getElementById('output').textContent = "Processed Text: " + text;
-            } else {
-                const errorText = await response.text();
-                document.getElementById('output').textContent = "Error: " + errorText;
-            }
-        });
-    </script>
+  <form id="upload-form">
+    <label for="file">Select a .txt file:</label>
+    <input 
+      type="file" 
+      id="file" 
+      name="file" 
+      accept=".txt" 
+      required
+    >
+    <button 
+      type="submit" 
+      id="submit-btn"
+    >Upload &amp; Process</button>
+  </form>
+
+  <div id="output" aria-live="polite"></div>
+
+  <script>
+    (function() {
+      const form      = document.getElementById('upload-form');
+      const fileInput = document.getElementById('file');
+      const submitBtn = document.getElementById('submit-btn');
+      const output    = document.getElementById('output');
+      const ENDPOINT  = 'https://hello-world-app-242937714343.us-central1.run.app/process';
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Basic UI feedback
+        submitBtn.disabled = true;
+        output.textContent = 'Processing…';
+
+        // Build FormData
+        const data = new FormData();
+        data.append('file', fileInput.files[0]);
+
+        try {
+          const res = await fetch(ENDPOINT, {
+            method: 'POST',
+            mode: 'cors',              // enforce CORS
+            body: data,
+          });
+
+          // Check HTTP-level errors
+          if (!res.ok) {
+            const errTxt = await res.text();
+            throw new Error(`Server ‑ ${res.status}: ${errTxt}`);
+          }
+
+          // Read as text (not JSON!)
+          const text = await res.text();
+          output.textContent = '✅ Success:\n\n' + text;
+
+        } catch (err) {
+          console.error('Upload error:', err);
+          output.textContent = '❌ Error:\n\n' + err.message;
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
